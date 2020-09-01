@@ -6,6 +6,7 @@ services:
       dockerfile: docker/php-fpm/Dockerfile
     depends_on:
       - redis
+      - mysql
     volumes:
       - ./:/var/www:cached
       - ./vendor:/var/www/vendor
@@ -28,6 +29,17 @@ services:
     working_dir: /var/www
     depends_on:
       - php-fpm
+  mysql:
+    image: mysql:5.7.29
+    container_name: mysql
+    tty: true
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_DATABASE: popular_videos
+      MYSQL_USER: popular_videos
+      MYSQL_PASSWORD: secret
+      MYSQL_ROOT_PASSWORD: secret
   redis:
     image: redis:alpine
     ports:
