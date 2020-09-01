@@ -11,7 +11,7 @@
 |
 */
 
-$router->get('/', [
+$router->get('/popular-videos', [
     'uses' => 'PopularVideosController@getVidosPerCountry',
     'as' => 'api.v1.popular-videos',
 ]);
