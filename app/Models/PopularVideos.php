@@ -16,12 +16,14 @@ class PopularVideos
     public function getPopularPerCountry(array $countryList)
     {
         return collect($countryList)
-            ->mapWithKeys(function($countryCode) {
+            ->map(function($countryCode) {
                 return [
-                    $countryCode => [
-                        'country_info' => $this->countryResource->getCountryInfo($countryCode),
-                        'items' => $this->videosResource->getVideos($countryCode),
-                    ]
+                    'country' => [
+                        'code' => $countryCode,
+                        'name' => CountryResource::COUNTRIES[$countryCode],
+                        'description' => $this->countryResource->getCountryInfo($countryCode),
+                    ],
+                    'items' => $this->videosResource->getVideos($countryCode),
                 ];
             });
     }

@@ -25,6 +25,8 @@ class PopularVideosController extends Controller
             $input['offset'] ?? null, 
             $input['size'] ?? null
         );
-        return $popularVideos->getPopularPerCountry($countries);
+        return [
+            'data' => $popularVideos->getPopularPerCountry($countries)
+        ];
     }
 }
