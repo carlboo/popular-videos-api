@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Exceptions\InProgressException;
+
 class PopularVideos
 {
     protected $videosResource;
@@ -15,15 +17,22 @@ class PopularVideos
 
     public function getPopularPerCountry(array $countryList)
     {
+        $videos = $this->videosResource->getVideos($countryList);
+        $descriptions = $this->countryResource->getCountryInfo($countryList);
+
+        if ($videos === false || $descriptions === false) {
+            throw new InProgressException();
+        }
+
         return collect($countryList)
-            ->map(function($countryCode) {
+            ->map(function ($countryCode) use ($videos, $descriptions) {
                 return [
                     'country' => [
                         'code' => $countryCode,
                         'name' => CountryResource::COUNTRIES[$countryCode],
-                        'description' => $this->countryResource->getCountryInfo($countryCode),
+                        'description' => $descriptions[$countryCode]
                     ],
-                    'items' => $this->videosResource->getVideos($countryCode),
+                    'items' => $videos[$countryCode]
                 ];
             });
     }

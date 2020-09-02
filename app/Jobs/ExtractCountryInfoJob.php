@@ -2,23 +2,25 @@
 
 namespace App\Jobs;
 
-use App\Jobs\Actions\ExtractCountryInfoAction;
 use App\Models\CountryResource;
 use GuzzleHttp\Client;
+use GuzzleHttp\Promise;
 use Illuminate\Support\Facades\Cache;
 
 class ExtractCountryInfoJob extends Job
 {
-    protected $countryCode;
+    protected $countryCodes;
+
 
     /**
      * Create a new job instance.
      *
      * @return void
      */
-    public function __construct(string $countryCode)
+    public function __construct($countryCodes)
     {
-        $this->countryCode = $countryCode;
+        
+        $this->countryCodes = $countryCodes;
     }
 
     /**
@@ -28,30 +30,39 @@ class ExtractCountryInfoJob extends Job
      */
     public function handle()
     {
-        $url = env('WIKIPEDIA_API_EXTRACT_URL');
-        $requestParameters = [
-            'action' => 'query',
-            'prop' => 'extracts',
-            'exintro' => 1,
-            'titles' => CountryResource::COUNTRIES[$this->countryCode],
-            'explaintext' => 1,
-            'format' => 'json',
-        ];
+        
 
-        $client = app(Client::class);
-        $response = $client->request('GET', $url, [
-            'query' => $requestParameters,
-            'headers' => ['Accept' => 'application/json'],
-        ]);
+        $client = new Client(['base_uri' => env('WIKIPEDIA_API_EXTRACT_URL')]);
 
-        if ($response->getStatusCode() === 200) {
+        $promises = collect($this->countryCodes)
+            ->mapWithKeys(function($code) use ($client) {
+                return [
+                    $code => $client->getAsync('', [
+                        'query' => [
+                            'action' => 'query',
+                            'prop' => 'extracts',
+                            'exintro' => 1,
+                            'titles' => CountryResource::COUNTRIES[$code],
+                            'explaintext' => 1,
+                            'format' => 'json',
+                        ],
+                        'headers' => ['Accept' => 'application/json']
+                    ])
+                ];
+            });
+
+        // Wait for the requests to complete; throws a ConnectException
+        // if any of the requests fail
+        $responses = Promise\unwrap($promises);
+
+        foreach ($responses as $key => $response) {
             $body = json_decode($response->getBody()->getContents(), true);
-            $data = reset($body['query']['pages'])['extract'];
-            Cache::put(
-                CountryResource::getCacheTag($this->countryCode),
-                $data,
-                CountryResource::TIME_CACHED
-            );
+                $data = reset($body['query']['pages'])['extract'];
+                Cache::put(
+                    CountryResource::getCacheTag($key),
+                    $data,
+                    CountryResource::TIME_CACHED
+                );
         }
     }
 }

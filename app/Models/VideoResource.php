@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Exceptions\InProgressException;
+
 use App\Jobs\ExtractVideoDataJob;
 use Illuminate\Support\Facades\Cache;
 
@@ -16,20 +16,31 @@ class VideoResource
         return self::CACHE_PREFIX . '.' . $countryCode;
     }
 
-    public function getVideos($countryCode)
+    public function getVideos($countryCodes)
     {
-        if (!Cache::has(self::getCacheTag($countryCode))) {
-            $this->refreshCache();
-            throw new InProgressException();
+        $dataAvailable = true;
+        foreach ($countryCodes as $countryCode) {
+            if (!Cache::has(self::getCacheTag($countryCode))) {
+                $this->refreshCache($countryCode);
+                $dataAvailable = false;
+            }
         }
-        return Cache::get(self::getCacheTag($countryCode));
+        if ($dataAvailable === false) {
+            return false;
+        }
+
+        return
+            collect($countryCodes)->mapWithKeys(function($countryCode) {
+                return [
+                    $countryCode => Cache::get(self::getCacheTag($countryCode))
+                ];
+            });
     }
 
-    protected function refreshCache()
+    protected function refreshCache($countryCode)
     {
-        foreach (array_keys(CountryResource::COUNTRIES) as $key) {
-            Cache::tags(self::getCacheTag($key))->flush();
-            dispatch(new ExtractVideoDataJob($key, 'none'));
-        }
+        Cache::tags(self::getCacheTag($countryCode))->flush();
+        dispatch(new ExtractVideoDataJob($countryCode, 'none'));
     }
+    
 }
