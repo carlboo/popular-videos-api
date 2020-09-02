@@ -16,7 +16,7 @@ Then install the project dependencies via Composer
 docker-compose run --rm composer install
 ```
 
-After we can set the settings for our project, A valid key for Google API, with access to YouTube Data API is needed.
+After we can set the settings for our project, A valid key for Google API with access to YouTube Data API is needed.
 ```shell
 cp .env.example .env
 ```
@@ -25,11 +25,15 @@ And inside the `.env` file, add the API token to the variable.
 GOOGLE_API_KEY=[your_key]
 ```
 
-Almost there, now we can start processing jobs on the queue
+Now we can create the database table for failed jobs and start processing jobs on the queue
 ```shell
+docker-compose exec -T php-fpm php artisan migrate
 docker-compose exec -T php-fpm php artisan queue:work
 ```
 
-Then request the data to `http://localhost/api/v1/popular-videos` it will start gathering the data and saving into the cache, visit it a couple of times and it should be available after processing.
-
 This project can also be executed as a lumen application outside Docker, for more info read the docs.
+
+## How to use
+Request the data to `http://localhost/api/v1/popular-videos`. The application will start collecting the data and saving into the cache, visit it a couple of times and it should be available after processing.
+
+A couple of parameters are available to use as url query string: `offset` and `size` for page size (countries per page)
