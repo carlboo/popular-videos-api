@@ -23,7 +23,6 @@ services:
       - php-fpm
   composer:
     image: composer:latest
-    container_name: composer
     volumes:
       - ./:/var/www
     working_dir: /var/www
@@ -31,7 +30,6 @@ services:
       - php-fpm
   mysql:
     image: mysql:5.7.29
-    container_name: mysql
     tty: true
     ports:
       - "3306:3306"
@@ -40,7 +38,11 @@ services:
       MYSQL_USER: popular_videos
       MYSQL_PASSWORD: secret
       MYSQL_ROOT_PASSWORD: secret
+    volumes:
+      - db:/var/lib/mysql:cached
   redis:
     image: redis:alpine
     ports:
       - "6379:6379"
+volumes:
+    db:
