@@ -17,10 +17,6 @@ class PopularVideosController extends Controller
             'size' => 'integer|min:0',
         ]);
 
-        if (app(Queue::class)->size('default')) { // TODO use specific queue
-            throw new InProgressException();
-        }
-
         $countries = CountryResource::getCodeList(
             $input['offset'] ?? null, 
             $input['size'] ?? null

@@ -59,13 +59,19 @@ class ExtractVideoDataJob extends Job
                 })
                 ->all();
 
+            $nextPageToken = $body['nextPageToken'] ?? false;
+            $hasNextPage = $nextPageToken !== false;
+
             Cache::put(
                 VideoResource::getCacheTag($this->countryCode), 
-                array_merge(Cache::get(VideoResource::getCacheTag($this->countryCode), []), $data),
+                array_merge(
+                    Cache::get(VideoResource::getCacheTag($this->countryCode, $hasNextPage), []),
+                    $data
+                ),
                 VideoResource::TIME_CACHED
             );
 
-            if($nextPageToken = $body['nextPageToken'] ?? false) {
+            if ($nextPageToken) {
                 dispatch(new ExtractVideoDataJob($this->countryCode, $nextPageToken));
             }
         }

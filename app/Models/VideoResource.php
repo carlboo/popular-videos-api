@@ -10,22 +10,17 @@ class VideoResource
 {
     public const TIME_CACHED = 30*60;   // 30 min
     public const CACHE_PREFIX = 'video';
+    public const CACHE_SUFIX_TEMP = 'temp';
     
-    public static function getCacheTag($countryCode)
+    public static function getCacheTag($countryCode, $temp = false)
     {
-        return self::CACHE_PREFIX . '.' . $countryCode;
+        return self::CACHE_PREFIX . ".$countryCode"
+        . $temp ? ('.' . self::CACHE_SUFIX_TEMP) : '';
     }
 
     public function getVideos($countryCodes)
     {
-        $dataAvailable = true;
-        foreach ($countryCodes as $countryCode) {
-            if (!Cache::has(self::getCacheTag($countryCode))) {
-                $this->refreshCache($countryCode);
-                $dataAvailable = false;
-            }
-        }
-        if ($dataAvailable === false) {
+        if (!$this->isInCacheOrRequest($countryCodes)) {
             return false;
         }
 
@@ -34,13 +29,27 @@ class VideoResource
                 return [
                     $countryCode => Cache::get(self::getCacheTag($countryCode))
                 ];
-            });
+            })
+            ->all();
+    }
+
+    protected function isInCacheOrRequest($countryCodes)
+    {
+        $dataAvailable = true;
+        foreach ($countryCodes as $countryCode) {
+            if (!Cache::has(self::getCacheTag($countryCode))) {
+                $this->refreshCache($countryCode);
+                $dataAvailable = false;
+            }
+        }
+        return $dataAvailable;
     }
 
     protected function refreshCache($countryCode)
     {
-        Cache::tags(self::getCacheTag($countryCode))->flush();
-        dispatch(new ExtractVideoDataJob($countryCode, 'none'));
+        if (!Cache::has(self::getCacheTag($countryCode), true)) {
+            dispatch(new ExtractVideoDataJob($countryCode, 'none'));
+        }
     }
     
 }
