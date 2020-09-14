@@ -25,16 +25,17 @@ class CountryResource
         return array_slice(array_keys(self::COUNTRIES), $offset, $lenght);
     }
 
-    public function getCountryInfo($countryCodes)
+    public static function getCacheTag(string $countryCode)
     {
-        foreach ($countryCodes as $countryCode) {
-            $refresh = [];
-            if (!Cache::has(self::getCacheTag($countryCode))) {
-                $refresh[] = $countryCode; 
-            }
-        }
-        if (!empty($refresh)) {
-            dispatch(new ExtractCountryInfoJob($refresh));
+        return self::CACHE_PREFIX . '.' . $countryCode;
+    }
+
+    /**
+     * @return false
+     */
+    public function getCountryInfo(array $countryCodes)
+    {
+        if (!$this->isInCacheOrRequest($countryCodes)) {
             return false;
         }
 
@@ -43,11 +44,24 @@ class CountryResource
                 return [
                     $code => Cache::get(self::getCacheTag($code))
                 ];
-            });
+            })
+            ->all();
+    }
+
+    public function isInCacheOrRequest($countryCodes)
+    {
+        $refresh = [];
+        foreach ($countryCodes as $countryCode) {
+            if (!Cache::has(self::getCacheTag($countryCode))) {
+                $refresh[] = $countryCode; 
+            }
+        }
+        if (!empty($refresh)) {
+            dispatch(new ExtractCountryInfoJob($refresh));
+            return false;
+        }
+        return true;
     }
     
-    public static function getCacheTag(string $countryCode)
-    {
-        return self::CACHE_PREFIX . '.' . $countryCode;
-    }
+    
 }
