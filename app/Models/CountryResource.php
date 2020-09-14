@@ -32,17 +32,18 @@ class CountryResource
             if (!Cache::has(self::getCacheTag($countryCode))) {
                 $refresh[] = $countryCode; 
             }
-            if (!empty($refresh)) {
-                dispatch(new ExtractCountryInfoJob($refresh));
-            }
-
-            return collect($countryCodes)
-                ->mapWithKeys(function($code){
-                    return [
-                        $code => Cache::get(self::getCacheTag($code))
-                    ];
-                });
         }
+        if (!empty($refresh)) {
+            dispatch(new ExtractCountryInfoJob($refresh));
+            return false;
+        }
+
+        return collect($countryCodes)
+            ->mapWithKeys(function($code){
+                return [
+                    $code => Cache::get(self::getCacheTag($code))
+                ];
+            });
     }
     
     public static function getCacheTag(string $countryCode)
