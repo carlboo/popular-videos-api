@@ -10,7 +10,7 @@ use Illuminate\Http\Request;
 
 class PopularVideosController extends Controller
 {
-    public function getVidosPerCountry(Request $request, PopularVideos $popularVideos)
+    public function getVideosPerCountry(Request $request, PopularVideos $popularVideos)
     {
         $input = $this->validate($request, [
             'offset' => 'integer|min:0',
